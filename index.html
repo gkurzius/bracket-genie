@@ -1529,19 +1529,21 @@ function blendProb(kenpom, vegas) {
 
 function getPoolThreshAdj(poolSize) {
   var p = parseInt(poolSize) || 50;
-  if (p <= 15)   return  0.10;
-  if (p <= 50)   return  0.00;
-  if (p <= 200)  return -0.04;
-  if (p <= 1000) return -0.08;
-  return -0.13;
+  if (p <= 10)   return  0.16;
+  if (p <= 30)   return  0.08;
+  if (p <= 75)   return  0.00;
+  if (p <= 300)  return -0.06;
+  if (p <= 1000) return -0.12;
+  return -0.18;
 }
 
 function champPublicThresh(poolSize) {
   var p = parseInt(poolSize) || 50;
-  if (p <= 50)   return 0.22;
-  if (p <= 200)  return 0.18;
-  if (p <= 1000) return 0.14;
-  return 0.09;
+  if (p <= 30)   return 0.30;
+  if (p <= 75)   return 0.22;
+  if (p <= 300)  return 0.16;
+  if (p <= 1000) return 0.11;
+  return 0.07;
 }
 
 function pct(val) {
@@ -1730,12 +1732,15 @@ function resolveGame(teamA, teamB, kenpomOverride, pickPctOverride, upsetToleran
 
   var pickUpset = false;
   if (upsetTolerance === 'safe') {
-    pickUpset = dogProb > (0.44 + adj) && leverage > 0.08;
+    var safeThresh = Math.max(0.34, 0.54 + adj);
+    pickUpset = dogProb > safeThresh;
   } else if (upsetTolerance === 'moderate') {
-    pickUpset = dogProb > (0.33 + adj) && leverage > 0.04;
+    var modThresh = Math.max(0.24, 0.30 + adj);
+    pickUpset = dogProb > modThresh && leverage > 0.02;
   } else if (upsetTolerance === 'chaotic') {
     var seedDiff = round <= 3 ? Math.abs(fav.seed - dog.seed) : 0;
-    pickUpset = dogProb > (0.22 + adj) && (round > 3 || seedDiff >= 2);
+    var chaoticThresh = Math.max(0.12, 0.16 + adj);
+    pickUpset = dogProb > chaoticThresh && (round > 3 || seedDiff >= 2);
   }
 
   if (constraints.protect && constraints.protect[dog.name] && constraints.protect[dog.name] >= round) {
@@ -1855,17 +1860,17 @@ function generateBracket(formData) {
   if (formData.preferredChampion && formData.preferredChampion.trim()) {
     var preferred = fuzzyFind(formData.preferredChampion.trim(), TEAMS);
     if (preferred) {
-      champion = preferred;
-      warnings.push('Preferred champion "' + preferred.name + '" locked in per your request.');
+      warnings.push('Preferred champion "' + preferred.name + '" locked in per your request. Bracket path may be adjusted.');
       if (preferred.championWinProb < 0.05) {
-        warnings.push(preferred.name + ' has a low win probability (' + pct(preferred.championWinProb) + ' Vegas title odds) — this is a high-risk pick.');
+        warnings.push(preferred.name + ' has low Vegas title odds (' + fmtOdds(preferred.cOdds) + ') — high-risk pick.');
       }
+      if (champion.name !== preferred.name) {
+        warnings.push('Note: your bracket simulation has ' + champion.name + ' winning — champion overridden to ' + preferred.name + '.');
+      }
+      champion = preferred;
     } else {
-      warnings.push('Could not find "' + formData.preferredChampion + '" in team database. Using optimal champion selection.');
-      champion = selectAutoChampion(TEAMS, kenpomOverride, pickPctOverride, champPubThresh);
+      warnings.push('Could not find "' + formData.preferredChampion + '" in the team database. Using bracket simulation result: ' + champion.name + '.');
     }
-  } else {
-    champion = selectAutoChampion(TEAMS, kenpomOverride, pickPctOverride, champPubThresh);
   }
 
   var sweet16 = eastResult.sweet16.concat(midwestResult.sweet16).concat(southResult.sweet16).concat(westResult.sweet16);
