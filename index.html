@@ -874,6 +874,19 @@
     }
 
     /* ─── PRINT STYLES ──────────────────────────────────────────── */
+    .full-bracket-region { margin-bottom: 2rem; }
+    .full-bracket-region-title { font-family: 'Bebas Neue', cursive; font-size: 1.3rem; color: var(--orange); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+    .full-bracket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.6rem; }
+    .bracket-game { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .bracket-round-label { background: #1a2d42; color: var(--orange); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.2rem 0.6rem; text-transform: uppercase; }
+    .bracket-matchup { padding: 0.4rem 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
+    .bracket-team { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; padding: 0.2rem 0; border-radius: 3px; }
+    .bracket-winner { color: #fff; font-weight: 600; }
+    .bracket-loser { color: #5a6a7a; text-decoration: line-through; }
+    .bseed { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #1a2d42; border-radius: 3px; font-size: 0.72rem; font-weight: 700; color: var(--orange); flex-shrink: 0; }
+    .bracket-winner .bseed { background: var(--orange); color: #fff; }
+    .bracket-adv { font-size: 0.65rem; background: rgba(232,83,10,0.18); color: var(--orange); border-radius: 3px; padding: 0 4px; margin-left: auto; font-weight: 700; letter-spacing: 0.04em; }
+
     @media print {
       header,
       form,
@@ -1311,6 +1324,14 @@
         </div>
       </div>
 
+      <!-- Full Bracket (R64 + R32 + S16 + E8 per region) -->
+      <div class="result-subsection" id="fullBracketSection">
+        <div class="result-subsection-title">Full Bracket — All Picks by Round</div>
+        <div id="fullBracketContent">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
       <!-- Leverage Plays -->
       <div class="result-subsection" id="leverageSection">
         <div class="result-subsection-title">Top Leverage Plays</div>
@@ -1506,6 +1527,23 @@ function blendProb(kenpom, vegas) {
   return 0.6 * kenpom + 0.4 * vegas;
 }
 
+function getPoolThreshAdj(poolSize) {
+  var p = parseInt(poolSize) || 50;
+  if (p <= 15)   return  0.10;
+  if (p <= 50)   return  0.00;
+  if (p <= 200)  return -0.04;
+  if (p <= 1000) return -0.08;
+  return -0.13;
+}
+
+function champPublicThresh(poolSize) {
+  var p = parseInt(poolSize) || 50;
+  if (p <= 50)   return 0.22;
+  if (p <= 200)  return 0.18;
+  if (p <= 1000) return 0.14;
+  return 0.09;
+}
+
 function pct(val) {
   return (val * 100).toFixed(1) + '%';
 }
@@ -1673,7 +1711,7 @@ function computeBlended(teamA, teamB, kenpomOverride, round) {
   return { probA: blended, probB: 1 - blended, kenpomProb: kenpomProb, vegasProb: vegasProb, divergence: divergence };
 }
 
-function resolveGame(teamA, teamB, kenpomOverride, pickPctOverride, upsetTolerance, constraints, round, chaosUpsetsLeft, upsets, flags) {
+function resolveGame(teamA, teamB, kenpomOverride, pickPctOverride, upsetTolerance, constraints, round, poolThreshAdj, upsets, flags) {
   if (!teamA) return teamB;
   if (!teamB) return teamA;
   var result = computeBlended(teamA, teamB, kenpomOverride, round);
@@ -1684,39 +1722,32 @@ function resolveGame(teamA, teamB, kenpomOverride, pickPctOverride, upsetToleran
   }
   var fav = probA >= probB ? teamA : teamB;
   var dog = probA >= probB ? teamB : teamA;
-  var favProb = probA >= probB ? probA : probB;
+  var favProb = Math.max(probA, probB);
   var dogProb = 1 - favProb;
   var dogPick = getPickPct(dog, round, pickPctOverride);
+  var leverage = dogProb - dogPick;
+  var adj = poolThreshAdj || 0;
+
   var pickUpset = false;
   if (upsetTolerance === 'safe') {
-    pickUpset = dogProb > 0.45 && dogPick < 0.30;
+    pickUpset = dogProb > (0.44 + adj) && leverage > 0.08;
   } else if (upsetTolerance === 'moderate') {
-    pickUpset = dogProb > 0.38 && dogPick < 0.25;
+    pickUpset = dogProb > (0.33 + adj) && leverage > 0.04;
   } else if (upsetTolerance === 'chaotic') {
-    var favSeed = fav.seed || 1;
-    var dogSeed = dog.seed || 16;
-    pickUpset = chaosUpsetsLeft > 0 && dogProb > 0.28 && Math.abs(favSeed - dogSeed) >= 2;
+    var seedDiff = round <= 3 ? Math.abs(fav.seed - dog.seed) : 0;
+    pickUpset = dogProb > (0.22 + adj) && (round > 3 || seedDiff >= 2);
   }
-  if (Math.abs(probA - probB) < 0.05) {
-    var pickA = getPickPct(teamA, round, pickPctOverride);
-    var pickB = getPickPct(teamB, round, pickPctOverride);
-    fav = pickA <= pickB ? teamA : teamB;
-    dog = pickA <= pickB ? teamB : teamA;
-    pickUpset = false;
-  }
-  var winner, loser;
-  if (pickUpset) {
-    winner = dog; loser = fav;
-    upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed) });
-    return winner;
-  }
-  if (constraints.protect && constraints.protect[fav.name]) return fav;
-  if (constraints.protect && constraints.protect[dog.name] && (constraints.protect[dog.name] >= round)) {
+
+  if (constraints.protect && constraints.protect[dog.name] && constraints.protect[dog.name] >= round) {
     upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed), forced: true });
     return dog;
   }
   if (constraints.eliminate && constraints.eliminate[fav.name] && constraints.eliminate[fav.name] <= round) {
     upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed), forced: true });
+    return dog;
+  }
+  if (pickUpset) {
+    upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed) });
     return dog;
   }
   return fav;
@@ -1733,29 +1764,36 @@ function buildRegionSlots(region) {
   return slotOrder.map(function(seed, idx) { return bySlot[idx]; });
 }
 
-function simulateRegion(region, kenpomOverride, pickPctOverride, upsetTolerance, constraints) {
+function simulateRegion(region, kenpomOverride, pickPctOverride, upsetTolerance, constraints, poolThreshAdj) {
   var slots = buildRegionSlots(region);
   var upsets = [], flags = [];
-  var chaosUpsetsLeft = upsetTolerance === 'chaotic' ? 4 : 0;
+  var adj = poolThreshAdj || 0;
+  var r64games = [], r32games = [], s16games = [], e8games = [];
+
   var r1 = [];
   for (var i = 0; i < 8; i++) {
-    var w = resolveGame(slots[i*2], slots[i*2+1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 1, chaosUpsetsLeft, upsets, flags);
-    if (upsetTolerance === 'chaotic' && upsets.length > (4 - chaosUpsetsLeft)) chaosUpsetsLeft--;
+    var a = slots[i*2], b = slots[i*2+1];
+    var w = resolveGame(a, b, kenpomOverride, pickPctOverride, upsetTolerance, constraints, 1, adj, upsets, flags);
+    r64games.push({ teamA: a, teamB: b, winner: w });
     r1.push(w);
   }
   var r2 = [];
   for (var i = 0; i < 4; i++) {
-    var w = resolveGame(r1[i*2], r1[i*2+1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 2, chaosUpsetsLeft, upsets, flags);
-    if (upsetTolerance === 'chaotic' && upsets.length > (4 - chaosUpsetsLeft)) chaosUpsetsLeft--;
+    var a = r1[i*2], b = r1[i*2+1];
+    var w = resolveGame(a, b, kenpomOverride, pickPctOverride, upsetTolerance, constraints, 2, adj, upsets, flags);
+    r32games.push({ teamA: a, teamB: b, winner: w });
     r2.push(w);
   }
   var s16 = [];
   for (var i = 0; i < 2; i++) {
-    var w = resolveGame(r2[i*2], r2[i*2+1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 3, chaosUpsetsLeft, upsets, flags);
+    var a = r2[i*2], b = r2[i*2+1];
+    var w = resolveGame(a, b, kenpomOverride, pickPctOverride, upsetTolerance, constraints, 3, adj, upsets, flags);
+    s16games.push({ teamA: a, teamB: b, winner: w });
     s16.push(w);
   }
-  var e8Winner = resolveGame(s16[0], s16[1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 4, chaosUpsetsLeft, upsets, flags);
-  return { sweet16: r2, elite8: s16, regionWinner: e8Winner, upsets: upsets, flags: flags };
+  var e8Winner = resolveGame(s16[0], s16[1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 4, adj, upsets, flags);
+  e8games.push({ teamA: s16[0], teamB: s16[1], winner: e8Winner });
+  return { region: region, sweet16: r2, elite8: s16, regionWinner: e8Winner, upsets: upsets, flags: flags, r64games: r64games, r32games: r32games, s16games: s16games, e8games: e8games };
 }
 
 function identifyLeveragePlays(allTeams, pickPctOverride, upsetTolerance) {
@@ -1778,20 +1816,16 @@ function identifyLeveragePlays(allTeams, pickPctOverride, upsetTolerance) {
   return plays.slice(0, 8);
 }
 
-function selectAutoChampion(teams, kenpomOverride, pickPctOverride) {
-  var candidates = teams.filter(function(t) {
-    var blend = blendProb(kenpomH2H(t.em, 0), t.championWinProb);
-    return blend >= 0.05;
-  });
+function selectAutoChampion(teams, kenpomOverride, pickPctOverride, pubThresh) {
+  var thresh = pubThresh || 0.20;
+  var candidates = teams.filter(function(t) { return t.championWinProb >= 0.03; });
   candidates.sort(function(a, b) {
-    var blendA = blendProb(kenpomH2H(a.em, 0), a.championWinProb);
-    var blendB = blendProb(kenpomH2H(b.em, 0), b.championWinProb);
-    var leverageA = blendA - a.pub.ch;
-    var leverageB = blendB - b.pub.ch;
+    var leverageA = a.championWinProb / Math.max(a.pub.ch, 0.01);
+    var leverageB = b.championWinProb / Math.max(b.pub.ch, 0.01);
     return leverageB - leverageA;
   });
   var contrarian = candidates.find(function(t) {
-    return t.pub.ch < 0.20 && t.championWinProb >= 0.05;
+    return t.pub.ch <= thresh && t.championWinProb >= 0.04;
   });
   return contrarian || candidates[0] || teams[0];
 }
@@ -1802,19 +1836,21 @@ function generateBracket(formData) {
   var constraints = parseConstraints(formData.protectedTeams, formData.eliminateTeams);
   var warnings = [];
   var allUpsets = [], allFlags = [];
+  var poolThreshAdj = getPoolThreshAdj(formData.poolSize);
+  var champPubThresh = champPublicThresh(formData.poolSize);
 
-  var eastResult = simulateRegion('East', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
-  var midwestResult = simulateRegion('Midwest', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
-  var southResult = simulateRegion('South', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
-  var westResult = simulateRegion('West', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
+  var eastResult = simulateRegion('East', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, poolThreshAdj);
+  var midwestResult = simulateRegion('Midwest', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, poolThreshAdj);
+  var southResult = simulateRegion('South', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, poolThreshAdj);
+  var westResult = simulateRegion('West', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, poolThreshAdj);
 
   allUpsets = eastResult.upsets.concat(midwestResult.upsets).concat(southResult.upsets).concat(westResult.upsets);
   allFlags = eastResult.flags.concat(midwestResult.flags).concat(southResult.flags).concat(westResult.flags);
 
   var ffTeams = [eastResult.regionWinner, midwestResult.regionWinner, southResult.regionWinner, westResult.regionWinner];
-  var ff1 = resolveGame(ffTeams[0], ffTeams[1], kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 5, 0, allUpsets, allFlags);
-  var ff2 = resolveGame(ffTeams[2], ffTeams[3], kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 5, 0, allUpsets, allFlags);
-  var champion = resolveGame(ff1, ff2, kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 6, 0, allUpsets, allFlags);
+  var ff1 = resolveGame(ffTeams[0], ffTeams[1], kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 5, poolThreshAdj, allUpsets, allFlags);
+  var ff2 = resolveGame(ffTeams[2], ffTeams[3], kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 5, poolThreshAdj, allUpsets, allFlags);
+  var champion = resolveGame(ff1, ff2, kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 6, poolThreshAdj, allUpsets, allFlags);
 
   if (formData.preferredChampion && formData.preferredChampion.trim()) {
     var preferred = fuzzyFind(formData.preferredChampion.trim(), TEAMS);
@@ -1822,11 +1858,14 @@ function generateBracket(formData) {
       champion = preferred;
       warnings.push('Preferred champion "' + preferred.name + '" locked in per your request.');
       if (preferred.championWinProb < 0.05) {
-        warnings.push(preferred.name + ' has a low win probability (' + pct(preferred.championWinProb) + ') — this is a high-risk pick.');
+        warnings.push(preferred.name + ' has a low win probability (' + pct(preferred.championWinProb) + ' Vegas title odds) — this is a high-risk pick.');
       }
     } else {
       warnings.push('Could not find "' + formData.preferredChampion + '" in team database. Using optimal champion selection.');
+      champion = selectAutoChampion(TEAMS, kenpomOverride, pickPctOverride, champPubThresh);
     }
+  } else {
+    champion = selectAutoChampion(TEAMS, kenpomOverride, pickPctOverride, champPubThresh);
   }
 
   var sweet16 = eastResult.sweet16.concat(midwestResult.sweet16).concat(southResult.sweet16).concat(westResult.sweet16);
@@ -1856,7 +1895,8 @@ function generateBracket(formData) {
     upsets: topUpsetsForDisplay,
     divergenceFlags: uniqueFlags,
     poolRationale: rationale,
-    constraintWarnings: warnings
+    constraintWarnings: warnings,
+    regionResults: [eastResult, midwestResult, southResult, westResult]
   };
 }
 
@@ -1920,27 +1960,27 @@ function roundLabel(n) {
 
 function renderChampion(team) {
   if (!team) return '<p style="color:#aaa">No champion selected</p>';
-  var blend = blendProb(kenpomH2H(team.em, 0), team.championWinProb);
+  var vegasTitlePct = pct(team.championWinProb);
+  var leverage = pct(team.championWinProb - team.pub.ch);
   return '<div class="champion-seed-badge">' + team.seed + '-SEED</div>' +
     '<div class="champion-name">' + team.name.toUpperCase() + '</div>' +
-    '<div class="champion-region">' + team.region + ' Region</div>' +
+    '<div class="champion-region">' + team.region + ' Region &mdash; ' + team.record + '</div>' +
     '<div class="champion-stats">' +
-      '<div class="champion-stat"><div class="champion-stat-value">' + pct(blend) + '</div><div class="champion-stat-label">Blended Win Prob</div></div>' +
-      '<div class="champion-stat"><div class="champion-stat-value">' + pct(team.pub.ch) + '</div><div class="champion-stat-label">Public Picking Them</div></div>' +
-      '<div class="champion-stat"><div class="champion-stat-value">' + fmtOdds(team.cOdds) + '</div><div class="champion-stat-label">Vegas Odds</div></div>' +
-      '<div class="champion-stat"><div class="champion-stat-value">' + team.record + '</div><div class="champion-stat-label">Record</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + fmtOdds(team.cOdds) + '</div><div class="champion-stat-label">Vegas Title Odds</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + vegasTitlePct + '</div><div class="champion-stat-label">Implied Title Prob</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + pct(team.pub.ch) + '</div><div class="champion-stat-label">% Public Picking</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value" style="color:#4ade80">+' + leverage + '</div><div class="champion-stat-label">Leverage Edge</div></div>' +
     '</div>';
 }
 
 function makeTeamCard(team, showRegion) {
   if (!team) return '<div class="team-card"><div class="team-card-seed">?</div><div class="team-card-name">TBD</div></div>';
-  var blend = blendProb(kenpomH2H(team.em, 0), team.championWinProb);
   var regionHtml = showRegion ? '<div class="team-card-region">' + team.region + '</div>' : '';
   return '<div class="team-card">' +
     '<div class="team-card-seed">' + team.seed + '</div>' +
     '<div class="team-card-name">' + team.name + '</div>' +
     regionHtml +
-    '<div class="team-card-prob">' + pct(blend) + '</div>' +
+    '<div class="team-card-prob">' + fmtOdds(team.cOdds) + '</div>' +
   '</div>';
 }
 
@@ -2046,11 +2086,46 @@ function renderConstraintWarnings(warnings) {
   }).join('');
 }
 
+function gameRow(game, roundLabel) {
+  if (!game || !game.teamA || !game.teamB) return '';
+  var aWon = game.winner && game.winner.name === game.teamA.name;
+  var bWon = !aWon;
+  return '<div class="bracket-game">' +
+    '<div class="bracket-round-label">' + roundLabel + '</div>' +
+    '<div class="bracket-matchup">' +
+      '<div class="bracket-team ' + (aWon ? 'bracket-winner' : 'bracket-loser') + '">' +
+        '<span class="bseed">' + (game.teamA.seed || '?') + '</span> ' + game.teamA.name +
+        (aWon ? ' <span class="bracket-adv">ADV</span>' : '') +
+      '</div>' +
+      '<div class="bracket-team ' + (bWon ? 'bracket-winner' : 'bracket-loser') + '">' +
+        '<span class="bseed">' + (game.teamB.seed || '?') + '</span> ' + game.teamB.name +
+        (bWon ? ' <span class="bracket-adv">ADV</span>' : '') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderFullBracket(regionResults) {
+  var el = document.getElementById('fullBracketContent');
+  if (!el || !regionResults) return;
+  el.innerHTML = regionResults.map(function(r) {
+    var r64html = (r.r64games || []).map(function(g) { return gameRow(g, 'R64'); }).join('');
+    var r32html = (r.r32games || []).map(function(g) { return gameRow(g, 'R32'); }).join('');
+    var s16html = (r.s16games || []).map(function(g) { return gameRow(g, 'S16'); }).join('');
+    var e8html  = (r.e8games  || []).map(function(g) { return gameRow(g, 'E8');  }).join('');
+    return '<div class="full-bracket-region">' +
+      '<div class="full-bracket-region-title">' + r.region + ' Region</div>' +
+      '<div class="full-bracket-grid">' + r64html + r32html + s16html + e8html + '</div>' +
+    '</div>';
+  }).join('');
+}
+
 function renderResults(result) {
   document.getElementById('championHero').innerHTML = renderChampion(result.champion);
   renderTeamGrid(result.finalFour, 'finalFourGrid', true);
   renderTeamGrid(result.elite8, 'eliteEightGrid', false);
   renderSweetSixteen(result.sweet16);
+  renderFullBracket(result.regionResults);
   renderLeverageTable(result.leveragePlays);
   renderUpsets(result.upsets);
   renderFlags(result.divergenceFlags);
