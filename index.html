@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bracket Genie — March Madness Optimizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── CSS CUSTOM PROPERTIES ─────────────────────────────────── */
+    :root {
+      --navy: #0D1B2A;
+      --surface: #1A2C42;
+      --surface-2: #22384F;
+      --orange: #E8530A;
+      --orange-hover: #C44208;
+      --text: #FFFFFF;
+      --muted: #8FA3B8;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --transition: 0.2s ease;
+    }
+
+    /* ─── GLOBAL RESET ──────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      background-color: var(--navy);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ─── TYPOGRAPHY ────────────────────────────────────────────── */
+    h1, h2, h3, h4, h5 {
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+
+    h2 {
+      font-size: 2rem;
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    h4 {
+      font-size: 1.2rem;
+      color: var(--orange);
+    }
+
+    p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    a {
+      color: var(--orange);
+      text-decoration: none;
+      transition: opacity var(--transition);
+    }
+
+    a:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+
+    /* ─── LAYOUT ────────────────────────────────────────────────── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ─── HEADER / HERO ─────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #0D1B2A 0%, #1A2C42 50%, #0D1B2A 100%);
+      border-bottom: 2px solid var(--orange);
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(232, 83, 10, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    header h1 {
+      font-size: clamp(3.5rem, 10vw, 7rem);
+      color: var(--text);
+      text-shadow: 0 0 40px rgba(232, 83, 10, 0.3);
+      position: relative;
+    }
+
+    header h1 span {
+      color: var(--orange);
+    }
+
+    .tagline {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: rgba(232, 83, 10, 0.15);
+      border: 1px solid rgba(232, 83, 10, 0.3);
+      color: var(--orange);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 100px;
+    }
+
+    /* ─── MAIN CONTENT ──────────────────────────────────────────── */
+    main {
+      padding: 2.5rem 1.5rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ─── FORM SECTIONS ─────────────────────────────────────────── */
+    .form-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.25rem;
+      transition: border-color var(--transition);
+    }
+
+    .form-section:hover {
+      border-color: var(--border-strong);
+    }
+
+    .form-section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.875rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-section-number {
+      background: var(--orange);
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .form-section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-row.single {
+      grid-template-columns: 1fr;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .label-hint {
+      font-weight: 400;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-left: 0.4rem;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      background: var(--navy);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 0.7rem 0.875rem;
+      width: 100%;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(232, 83, 10, 0.15);
+    }
+
+    input[type="text"]::placeholder,
+    input[type="number"]::placeholder,
+    textarea::placeholder {
+      color: var(--muted);
+      opacity: 0.7;
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238FA3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.875rem center;
+      padding-right: 2.25rem;
+    }
+
+    select option {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.5;
+    }
+
+    .field-description {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* ─── TOGGLE GROUP ──────────────────────────────────────────── */
+    .toggle-group {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      overflow: hidden;
+      width: fit-content;
+    }
+
+    .toggle-btn {
+      background: var(--navy);
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      padding: 0.65rem 1.5rem;
+      transition: background var(--transition), color var(--transition);
+      position: relative;
+    }
+
+    .toggle-btn:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 20%;
+      height: 60%;
+      width: 1px;
+      background: var(--border-strong);
+    }
+
+    .toggle-btn:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .toggle-btn.active {
+      background: var(--orange);
+      color: white;
+    }
+
+    .toggle-btn.active:hover {
+      background: var(--orange-hover);
+    }
+
+    .toggle-descriptions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .toggle-desc-item {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .toggle-desc-item strong {
+      color: var(--text);
+    }
+
+    /* ─── PUBLIC PICK LINK ──────────────────────────────────────── */
+    .field-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      color: var(--orange);
+      margin-top: 0.35rem;
+      font-weight: 500;
+    }
+
+    .field-link::before {
+      content: '↗';
+    }
+
+    /* ─── SUBMIT BUTTON ─────────────────────────────────────────── */
+    .submit-wrapper {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .btn-submit {
+      background: var(--orange);
+      border: none;
+      border-radius: var(--radius);
+      color: white;
+      cursor: pointer;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+      padding: 1rem 3.5rem;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      box-shadow: 0 4px 20px rgba(232, 83, 10, 0.35);
+    }
+
+    .btn-submit:hover {
+      background: var(--orange-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(232, 83, 10, 0.45);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #constraintWarnings {
+      margin-top: 1rem;
+      text-align: left;
+      display: none;
+    }
+
+    .warning-item {
+      background: rgba(232, 83, 10, 0.1);
+      border: 1px solid rgba(232, 83, 10, 0.3);
+      border-radius: var(--radius);
+      color: var(--orange);
+      font-size: 0.85rem;
+      padding: 0.6rem 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ─── UTILITY CLASSES ───────────────────────────────────────── */
+    .hidden {
+      display: none !important;
+    }
+
+    .text-orange {
+      color: var(--orange);
+    }
+
+    .text-muted {
+      color: var(--muted);
+    }
+
+    /* ─── RESULTS SECTION ───────────────────────────────────────── */
+    .results-section {
+      margin-top: 3rem;
+    }
+
+    .results-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid var(--orange);
+    }
+
+    .results-header h2 {
+      font-size: 3rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .results-header p {
+      font-size: 0.9rem;
+    }
+
+    /* ─── RESULT SUBSECTIONS ────────────────────────────────────── */
+    .result-subsection {
+      margin-bottom: 2.5rem;
+    }
+
+    .result-subsection-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.05em;
+      color: var(--orange);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .result-subsection-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── CHAMPION HERO ─────────────────────────────────────────── */
+    .champion-hero {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+      border: 2px solid var(--orange);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .champion-hero::before {
+      content: '🏆';
+      position: absolute;
+      top: -10px;
+      right: 20px;
+      font-size: 8rem;
+      opacity: 0.05;
+      pointer-events: none;
+    }
+
+    .champion-seed-badge {
+      display: inline-block;
+      background: var(--orange);
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      padding: 0.3rem 0.875rem;
+      border-radius: 100px;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.06em;
+    }
+
+    .champion-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .champion-region {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.25rem;
+    }
+
+    .champion-stats {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .champion-stat {
+      text-align: center;
+    }
+
+    .champion-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      color: var(--orange);
+      line-height: 1;
+    }
+
+    .champion-stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 0.2rem;
+    }
+
+    /* ─── TEAM GRID (Final Four, Elite Eight, Sweet Sixteen) ─────── */
+    .team-grid {
+      display: grid;
+      gap: 0.875rem;
+    }
+
+    .team-grid.ff-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .team-grid.e8-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .team-grid.s16-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .team-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+
+    .team-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+
+    .team-card-seed {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.9rem;
+      color: var(--orange);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+    }
+
+    .team-card-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .team-card-region {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .team-card-prob {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    .team-card-prob span {
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    /* ─── SWEET 16 REGION GROUPING ──────────────────────────────── */
+    .s16-region-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .s16-region-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .s16-region-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+    }
+
+    /* ─── LEVERAGE TABLE ────────────────────────────────────────── */
+    .leverage-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .leverage-table th {
+      background: var(--surface-2);
+      color: var(--orange);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid var(--orange);
+    }
+
+    .leverage-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    .leverage-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .leverage-table tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .leverage-table tr:hover td {
+      background: rgba(232, 83, 10, 0.05);
+    }
+
+    .prob-high {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+
+    .prob-medium {
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    .prob-low {
+      color: var(--muted);
+    }
+
+    /* ─── UPSET LIST ────────────────────────────────────────────── */
+    .upset-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .upset-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 0.875rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .upset-item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .upset-matchup {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .upset-round-badge {
+      background: rgba(232, 83, 10, 0.15);
+      color: var(--orange);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .upset-reasoning {
+      font-size: 0.83rem;
+      color: var(--muted);
+    }
+
+    /* ─── FLAG LIST ─────────────────────────────────────────────── */
+    .flag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    .flag-item {
+      background: rgba(255, 193, 7, 0.06);
+      border: 1px solid rgba(255, 193, 7, 0.2);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .flag-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    .flag-content {
+      flex: 1;
+    }
+
+    .flag-teams {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+
+    .flag-detail {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .flag-delta {
+      color: #FFC107;
+      font-weight: 600;
+    }
+
+    /* ─── RATIONALE TEXT ────────────────────────────────────────── */
+    .rationale-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--orange);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: 1.5rem 1.75rem;
+    }
+
+    .rationale-text {
+      font-size: 1rem;
+      color: var(--text);
+      line-height: 1.75;
+    }
+
+    .rationale-text p + p {
+      margin-top: 0.75rem;
+    }
+
+    /* ─── ACTION BUTTONS ────────────────────────────────────────── */
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 0.75rem 2rem;
+      transition: all var(--transition);
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--orange);
+      color: white;
+      box-shadow: 0 2px 12px rgba(232, 83, 10, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--orange-hover);
+      box-shadow: 0 4px 20px rgba(232, 83, 10, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-2);
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .btn-copy-feedback {
+      font-size: 0.8rem;
+      color: #4CAF50;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity var(--transition);
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-copy-feedback.visible {
+      opacity: 1;
+    }
+
+    /* ─── FOOTER ────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+
+    footer p {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ─── PRINT STYLES ──────────────────────────────────────────── */
+    @media print {
+      header,
+      form,
+      .submit-wrapper,
+      .action-buttons,
+      footer {
+        display: none !important;
+      }
+
+      body {
+        background: white;
+        color: black;
+      }
+
+      .results-section {
+        color: black;
+      }
+
+      .form-section,
+      .champion-hero,
+      .team-card,
+      .rationale-box,
+      .upset-item,
+      .flag-item {
+        background: white !important;
+        border-color: #ccc !important;
+        color: black !important;
+        box-shadow: none !important;
+      }
+
+      .champion-name,
+      .team-card-name,
+      .result-subsection-title,
+      h2, h3, h4 {
+        color: black !important;
+      }
+
+      .text-orange,
+      .champion-seed-badge,
+      .form-section-number,
+      .toggle-btn.active,
+      .upset-round-badge,
+      .leverage-table th {
+        color: #E8530A !important;
+        background: rgba(232, 83, 10, 0.1) !important;
+      }
+
+      .result-subsection-title::after {
+        background: #ccc !important;
+      }
+
+      .leverage-table td,
+      .leverage-table th {
+        border-color: #ccc !important;
+        color: black !important;
+      }
+
+      .team-card-region,
+      .champion-stat-label,
+      .upset-reasoning,
+      .flag-detail,
+      p {
+        color: #555 !important;
+      }
+
+      .results-section.hidden {
+        display: block !important;
+      }
+
+      @page {
+        margin: 1cm;
+      }
+    }
+
+    /* ─── RESPONSIVE BREAKPOINTS ────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .team-grid.ff-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .team-grid.e8-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .s16-region-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      main {
+        padding: 1.5rem 1rem 3rem;
+      }
+
+      .form-section {
+        padding: 1.25rem 1.25rem;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .toggle-group {
+        width: 100%;
+      }
+
+      .toggle-btn {
+        flex: 1;
+        padding: 0.65rem 0.75rem;
+      }
+
+      .team-grid.ff-grid,
+      .team-grid.e8-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .team-grid.s16-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .s16-region-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .leverage-table {
+        font-size: 0.8rem;
+      }
+
+      .leverage-table th,
+      .leverage-table td {
+        padding: 0.5rem 0.6rem;
+      }
+
+      .champion-stats {
+        gap: 1rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 100%;
+        max-width: 320px;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 2rem 1rem 1.75rem;
+      }
+
+      .team-grid.ff-grid,
+      .team-grid.e8-grid,
+      .team-grid.s16-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .s16-region-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .champion-hero {
+        padding: 1.5rem 1rem;
+      }
+
+      .champion-stats {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .form-section-header {
+        flex-wrap: wrap;
+      }
+
+      .leverage-table-wrapper {
+        overflow-x: auto;
+      }
+
+      .results-header h2 {
+        font-size: 2rem;
+      }
+    }
+
+    /* ─── LOADING SPINNER ───────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 1em;
+      height: 1em;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ─── TOAST NOTIFICATION ────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #4CAF50;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 100px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <h1>Bracket <span>Genie</span></h1>
+      <p class="tagline">Data-Driven March Madness Bracket Optimizer — 2026 NCAA Tournament</p>
+      <div class="header-badges">
+        <span class="badge">Vegas Odds Embedded</span>
+        <span class="badge">KenPom Analytics</span>
+        <span class="badge">Leverage Engine</span>
+        <span class="badge">Pool Strategy AI</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <form id="bracketForm" novalidate>
+
+      <!-- Section 1: Pool Configuration -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-number">1</div>
+          <div class="form-section-title">Pool Configuration</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="poolSize">Pool Size <span class="label-hint">(# of entries)</span></label>
+            <input
+              type="number"
+              id="poolSize"
+              name="poolSize"
+              min="2"
+              max="100000"
+              value="50"
+              placeholder="e.g. 50"
+            />
+            <span class="field-description">How many brackets are in your pool? More entries = more contrarian picks needed.</span>
+          </div>
+          <div class="form-group">
+            <label for="scoringFormat">Scoring Format</label>
+            <select id="scoringFormat" name="scoringFormat">
+              <option value="standard">Standard (1-2-4-8-16-32)</option>
+              <option value="espn">ESPN Upset Bonus</option>
+              <option value="yahoo">Yahoo</option>
+              <option value="other">Other</option>
+            </select>
+            <span class="field-description">Affects how upsets are weighted in bracket optimization.</span>
+          </div>
+        </div>
+        <div class="form-row single" id="otherScoringWrapper" style="display: none;">
+          <div class="form-group">
+            <label for="otherScoringDesc">Describe Your Scoring System</label>
+            <textarea
+              id="otherScoringDesc"
+              name="otherScoringDesc"
+              rows="2"
+              placeholder="e.g. Points per round multiplied by seed of winning team..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Strategy -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-number">2</div>
+          <div class="form-section-title">Upset Tolerance</div>
+        </div>
+        <div class="form-group">
+          <label>How aggressive should your bracket be?</label>
+          <div class="toggle-group" role="group" aria-label="Upset tolerance">
+            <button type="button" class="toggle-btn" data-value="safe">Safe</button>
+            <button type="button" class="toggle-btn active" data-value="moderate">Moderate</button>
+            <button type="button" class="toggle-btn" data-value="chaotic">Chaotic</button>
+          </div>
+          <input type="hidden" id="upsetTolerance" name="upsetTolerance" value="moderate" />
+          <div class="toggle-descriptions">
+            <span class="toggle-desc-item"><strong>Safe:</strong> Upsets only when prob &gt;45% &amp; low public pick</span>
+            <span class="toggle-desc-item"><strong>Moderate:</strong> Upsets when prob &gt;38% &amp; contrarian value exists</span>
+            <span class="toggle-desc-item"><strong>Chaotic:</strong> 3–4 upsets per region, max differentiation</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Team Constraints -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-number">3</div>
+          <div class="form-section-title">Team Constraints</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="protectedTeams">Protected Teams <span class="label-hint">(optional)</span></label>
+            <textarea
+              id="protectedTeams"
+              name="protectedTeams"
+              placeholder="e.g. Duke must reach Final Four&#10;Michigan must reach Elite Eight"
+            ></textarea>
+            <span class="field-description">Teams you want to keep alive through a certain round.</span>
+          </div>
+          <div class="form-group">
+            <label for="eliminateTeams">Teams to Eliminate Early <span class="label-hint">(optional)</span></label>
+            <textarea
+              id="eliminateTeams"
+              name="eliminateTeams"
+              placeholder="e.g. Knock out Kansas in Round of 32&#10;Eliminate UConn in Sweet 16"
+            ></textarea>
+            <span class="field-description">Teams you want to upset early for bracket differentiation.</span>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label for="preferredChampion">Preferred Champion <span class="label-hint">(optional)</span></label>
+            <input
+              type="text"
+              id="preferredChampion"
+              name="preferredChampion"
+              placeholder="e.g. Michigan"
+            />
+            <span class="field-description">Lock in a champion and build the most credible path backward. Leave blank for auto-selection.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Data Overrides -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-number">4</div>
+          <div class="form-section-title">Data Overrides <span class="label-hint" style="font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 400;">(optional — app uses embedded 2026 data by default)</span></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="kenpomData">KenPom Efficiency Margins <span class="label-hint">(optional)</span></label>
+            <textarea
+              id="kenpomData"
+              name="kenpomData"
+              placeholder="Paste KenPom data if you have a subscription&#10;&#10;Format: Team Name | +XX.X&#10;e.g. Duke | +28.4&#10;     Michigan | +24.1"
+            ></textarea>
+            <span class="field-description">Overrides embedded KenPom estimates. Visit <a href="https://kenpom.com" target="_blank" rel="noopener">kenpom.com</a> if you have a subscription.</span>
+          </div>
+          <div class="form-group">
+            <label for="publicPickData">Public Pick Percentages <span class="label-hint">(optional)</span></label>
+            <textarea
+              id="publicPickData"
+              name="publicPickData"
+              placeholder="Paste ESPN People's Bracket data here&#10;&#10;Format: Team Name | Round | XX%&#10;e.g. Duke | Champion | 22%&#10;     Michigan | Final Four | 38%"
+            ></textarea>
+            <span class="field-description">
+              Overrides embedded estimates.
+            </span>
+            <a
+              href="https://fantasy.espn.com/games/tournament-challenge-bracket-2026/peoplesbracket"
+              target="_blank"
+              rel="noopener"
+              class="field-link"
+            >ESPN People's Bracket — copy pick percentages here</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-wrapper">
+        <button type="submit" class="btn-submit" id="submitBtn">
+          Build My Bracket
+        </button>
+        <div id="constraintWarnings"></div>
+      </div>
+
+    </form>
+
+    <!-- ─── RESULTS SECTION ─────────────────────────────────────── -->
+    <section id="results" class="results-section hidden" aria-live="polite">
+
+      <div class="results-header">
+        <h2>Your Optimized Bracket</h2>
+        <p id="resultsSubtitle">Generated using Vegas odds, KenPom efficiency margins, and public pick leverage analysis</p>
+      </div>
+
+      <!-- Champion -->
+      <div class="result-subsection" id="championSection">
+        <div class="result-subsection-title">National Champion</div>
+        <div class="champion-hero" id="championHero">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Final Four -->
+      <div class="result-subsection" id="finalFourSection">
+        <div class="result-subsection-title">Final Four</div>
+        <div class="team-grid ff-grid" id="finalFourGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Elite Eight -->
+      <div class="result-subsection" id="eliteEightSection">
+        <div class="result-subsection-title">Elite Eight</div>
+        <div class="team-grid e8-grid" id="eliteEightGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Sweet Sixteen -->
+      <div class="result-subsection" id="sweetSixteenSection">
+        <div class="result-subsection-title">Sweet Sixteen</div>
+        <div id="sweetSixteenContent">
+          <!-- Rendered by JS (region groups) -->
+        </div>
+      </div>
+
+      <!-- Leverage Plays -->
+      <div class="result-subsection" id="leverageSection">
+        <div class="result-subsection-title">Top Leverage Plays</div>
+        <div class="leverage-table-wrapper">
+          <table class="leverage-table" id="leverageTable">
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Round</th>
+                <th>Blended Win Prob</th>
+                <th>Est. Public Pick %</th>
+                <th>Why It Wins the Pool</th>
+              </tr>
+            </thead>
+            <tbody id="leverageTableBody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Key Upsets -->
+      <div class="result-subsection" id="upsetsSection">
+        <div class="result-subsection-title">Key Upset Calls</div>
+        <ul class="upset-list" id="upsetList">
+          <!-- Rendered by JS -->
+        </ul>
+      </div>
+
+      <!-- Divergence Flags -->
+      <div class="result-subsection" id="flagsSection">
+        <div class="result-subsection-title">KenPom vs Vegas Divergences</div>
+        <div class="flag-list" id="flagList">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Pool-Winning Rationale -->
+      <div class="result-subsection" id="rationaleSection">
+        <div class="result-subsection-title">Pool-Winning Rationale</div>
+        <div class="rationale-box">
+          <div class="rationale-text" id="rationaleText">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="copyBtn" type="button">
+          Copy Bracket
+        </button>
+        <button class="btn btn-secondary" id="printBtn" type="button">
+          Print / Save as PDF
+        </button>
+      </div>
+
+    </section>
+    <!-- /#results -->
+
+  </main>
+
+  <footer>
+    <p>Bracket Genie &mdash; 2026 NCAA Tournament &mdash; Odds embedded from DraftKings via ESPN (March 17, 2026). For entertainment purposes.</p>
+  </footer>
+
+  <!-- Toast notification -->
+  <div id="toast" role="alert" aria-live="assertive"></div>
+
+  <script>
+const TEAMS = [
+  {seed:1,name:"Duke",region:"East",record:"32-2",cOdds:300,fOdds:140,ffOdds:-135,e8Odds:-255,s16Odds:-600,r1Odds:-20000,em:28.4,conf:"high",pub:{s16:0.88,e8:0.75,ff:0.58,ch:0.22}},
+  {seed:2,name:"UConn",region:"East",record:"29-5",cOdds:2500,fOdds:1300,ffOdds:600,e8Odds:170,s16Odds:-200,r1Odds:-4500,em:19.3,conf:"high",pub:{s16:0.72,e8:0.55,ff:0.32,ch:0.09}},
+  {seed:3,name:"Illinois",region:"East",record:"24-8",cOdds:1900,fOdds:800,ffOdds:310,e8Odds:120,s16Odds:-400,r1Odds:-6500,em:18.2,conf:"high",pub:{s16:0.68,e8:0.48,ff:0.22,ch:0.06}},
+  {seed:4,name:"Nebraska",region:"East",record:"26-6",cOdds:10000,fOdds:4000,ffOdds:1100,e8Odds:400,s16Odds:-105,r1Odds:-1000,em:15.6,conf:"high",pub:{s16:0.45,e8:0.25,ff:0.09,ch:0.02}},
+  {seed:5,name:"St. John's",region:"East",record:"28-6",cOdds:6000,fOdds:2000,ffOdds:900,e8Odds:475,s16Odds:-105,r1Odds:-600,em:14.9,conf:"high",pub:{s16:0.52,e8:0.30,ff:0.12,ch:0.03}},
+  {seed:6,name:"North Carolina",region:"East",record:"24-8",cOdds:25000,fOdds:20000,ffOdds:6000,e8Odds:2000,s16Odds:600,r1Odds:-142,em:13.6,conf:"high",pub:{s16:0.38,e8:0.18,ff:0.07,ch:0.015}},
+  {seed:7,name:"UCLA",region:"East",record:"23-11",cOdds:15000,fOdds:5500,ffOdds:2200,e8Odds:550,s16Odds:200,r1Odds:-245,em:11.9,conf:"medium",pub:{s16:0.30,e8:0.14,ff:0.05,ch:0.01}},
+  {seed:8,name:"Ohio State",region:"East",record:"21-12",cOdds:25000,fOdds:6000,ffOdds:2500,e8Odds:1100,s16Odds:550,r1Odds:-142,em:9.8,conf:"medium",pub:{s16:0.28,e8:0.12,ff:0.04,ch:0.008}},
+  {seed:9,name:"TCU",region:"East",record:"22-11",cOdds:40000,fOdds:35000,ffOdds:13000,e8Odds:4500,s16Odds:1600,r1Odds:120,em:7.8,conf:"medium",pub:{s16:0.12,e8:0.05,ff:0.018,ch:0.003}},
+  {seed:10,name:"UCF",region:"East",record:"21-11",cOdds:40000,fOdds:40000,ffOdds:45000,e8Odds:5000,s16Odds:1400,r1Odds:200,em:7.1,conf:"medium",pub:{s16:0.10,e8:0.04,ff:0.012,ch:0.002}},
+  {seed:11,name:"VCU",region:"East",record:"26-7",cOdds:50000,fOdds:30000,ffOdds:15000,e8Odds:3500,s16Odds:750,r1Odds:120,em:7.6,conf:"medium",pub:{s16:0.08,e8:0.03,ff:0.010,ch:0.002}},
+  {seed:12,name:"Northern Iowa",region:"East",record:"23-12",cOdds:200000,fOdds:35000,ffOdds:25000,e8Odds:6500,s16Odds:1200,r1Odds:440,em:5.4,conf:"low",pub:{s16:0.04,e8:0.015,ff:0.005,ch:0.001}},
+  {seed:13,name:"Troy",region:"East",record:"22-11",cOdds:200000,fOdds:40000,ffOdds:50000,e8Odds:35000,s16Odds:5500,r1Odds:650,em:4.1,conf:"low",pub:{s16:0.02,e8:0.007,ff:0.002,ch:0.0004}},
+  {seed:14,name:"Pennsylvania",region:"East",record:"17-11",cOdds:150000,fOdds:40000,ffOdds:100000,e8Odds:40000,s16Odds:11000,r1Odds:2000,em:2.1,conf:"low",pub:{s16:0.01,e8:0.003,ff:0.001,ch:0.0002}},
+  {seed:15,name:"Furman",region:"East",record:"22-12",cOdds:200000,fOdds:40000,ffOdds:80000,e8Odds:25000,s16Odds:12000,r1Odds:1700,em:1.4,conf:"low",pub:{s16:0.005,e8:0.002,ff:0.0006,ch:0.0001}},
+  {seed:16,name:"Siena",region:"East",record:"23-11",cOdds:200000,fOdds:40000,ffOdds:80000,e8Odds:30000,s16Odds:20000,r1Odds:3500,em:-1.2,conf:"low",pub:{s16:0.002,e8:0.0008,ff:0.0003,ch:0.00005}},
+  {seed:1,name:"Michigan",region:"Midwest",record:"31-2",cOdds:360,fOdds:155,ffOdds:-130,e8Odds:-380,s16Odds:-900,r1Odds:-5000,em:25.1,conf:"high",pub:{s16:0.85,e8:0.70,ff:0.52,ch:0.18}},
+  {seed:2,name:"Purdue",region:"Midwest",record:"26-8",cOdds:2500,fOdds:900,ffOdds:360,e8Odds:105,s16Odds:-330,r1Odds:-8000,em:17.6,conf:"high",pub:{s16:0.65,e8:0.48,ff:0.22,ch:0.06}},
+  {seed:3,name:"Michigan State",region:"Midwest",record:"25-7",cOdds:4000,fOdds:1500,ffOdds:700,e8Odds:200,s16Odds:-130,r1Odds:-1800,em:16.4,conf:"high",pub:{s16:0.60,e8:0.40,ff:0.16,ch:0.04}},
+  {seed:4,name:"Arkansas",region:"Midwest",record:"25-8",cOdds:6000,fOdds:3000,ffOdds:1100,e8Odds:450,s16Odds:-120,r1Odds:-1350,em:15.8,conf:"high",pub:{s16:0.44,e8:0.24,ff:0.09,ch:0.02}},
+  {seed:5,name:"Wisconsin",region:"Midwest",record:"24-10",cOdds:8000,fOdds:3500,ffOdds:1500,e8Odds:550,s16Odds:110,r1Odds:-470,em:13.8,conf:"high",pub:{s16:0.48,e8:0.26,ff:0.10,ch:0.02}},
+  {seed:6,name:"Louisville",region:"Midwest",record:"23-10",cOdds:11000,fOdds:2800,ffOdds:1300,e8Odds:360,s16Odds:150,r1Odds:-225,em:13.1,conf:"medium",pub:{s16:0.35,e8:0.17,ff:0.06,ch:0.013}},
+  {seed:7,name:"Miami",region:"Midwest",record:"25-8",cOdds:40000,fOdds:10000,ffOdds:5000,e8Odds:1100,s16Odds:400,r1Odds:-130,em:11.8,conf:"medium",pub:{s16:0.28,e8:0.12,ff:0.04,ch:0.008}},
+  {seed:8,name:"Georgia",region:"Midwest",record:"22-10",cOdds:50000,fOdds:20000,ffOdds:6500,e8Odds:2000,s16Odds:900,r1Odds:-162,em:9.1,conf:"medium",pub:{s16:0.25,e8:0.10,ff:0.035,ch:0.007}},
+  {seed:9,name:"Saint Louis",region:"Midwest",record:"28-5",cOdds:40000,fOdds:30000,ffOdds:17000,e8Odds:4500,s16Odds:1500,r1Odds:136,em:8.9,conf:"medium",pub:{s16:0.10,e8:0.04,ff:0.013,ch:0.002}},
+  {seed:10,name:"Missouri",region:"Midwest",record:"20-12",cOdds:50000,fOdds:25000,ffOdds:13000,e8Odds:3000,s16Odds:950,r1Odds:110,em:7.8,conf:"medium",pub:{s16:0.09,e8:0.035,ff:0.011,ch:0.002}},
+  {seed:11,name:"South Florida",region:"Midwest",record:"24-8",cOdds:100000,fOdds:40000,ffOdds:19000,e8Odds:4000,s16Odds:1200,r1Odds:185,em:6.9,conf:"low",pub:{s16:0.07,e8:0.025,ff:0.008,ch:0.0015}},
+  {seed:12,name:"High Point",region:"Midwest",record:"30-4",cOdds:200000,fOdds:40000,ffOdds:40000,e8Odds:20000,s16Odds:4000,r1Odds:360,em:6.7,conf:"low",pub:{s16:0.035,e8:0.012,ff:0.004,ch:0.0008}},
+  {seed:13,name:"Hawai'i",region:"Midwest",record:"24-8",cOdds:200000,fOdds:50000,ffOdds:40000,e8Odds:35000,s16Odds:6000,r1Odds:800,em:3.9,conf:"low",pub:{s16:0.025,e8:0.008,ff:0.003,ch:0.0005}},
+  {seed:14,name:"North Dakota State",region:"Midwest",record:"27-7",cOdds:200000,fOdds:40000,ffOdds:50000,e8Odds:25000,s16Odds:5000,r1Odds:1000,em:2.8,conf:"low",pub:{s16:0.015,e8:0.005,ff:0.0015,ch:0.0003}},
+  {seed:15,name:"Queens University",region:"Midwest",record:"21-13",cOdds:200000,fOdds:100000,ffOdds:40000,e8Odds:40000,s16Odds:20000,r1Odds:2200,em:1.2,conf:"low",pub:{s16:0.003,e8:0.001,ff:0.0004,ch:0.00008}},
+  {seed:16,name:"UMBC",region:"Midwest",record:"24-8",cOdds:200000,fOdds:40000,ffOdds:80000,e8Odds:35000,s16Odds:30000,r1Odds:3000,em:-0.5,conf:"low",pub:{s16:0.002,e8:0.0008,ff:0.0002,ch:0.00004}},
+  {seed:1,name:"Florida",region:"South",record:"26-7",cOdds:750,fOdds:350,ffOdds:165,e8Odds:-160,s16Odds:-450,r1Odds:-5000,em:21.8,conf:"high",pub:{s16:0.80,e8:0.62,ff:0.40,ch:0.13}},
+  {seed:2,name:"Iowa State",region:"South",record:"27-7",cOdds:1500,fOdds:700,ffOdds:245,e8Odds:-130,s16Odds:-400,r1Odds:-8000,em:19.8,conf:"high",pub:{s16:0.72,e8:0.55,ff:0.30,ch:0.09}},
+  {seed:3,name:"Virginia",region:"South",record:"29-5",cOdds:7500,fOdds:3000,ffOdds:1100,e8Odds:310,s16Odds:-125,r1Odds:-2400,em:16.9,conf:"high",pub:{s16:0.58,e8:0.38,ff:0.15,ch:0.04}},
+  {seed:4,name:"Alabama",region:"South",record:"23-9",cOdds:18000,fOdds:6000,ffOdds:2200,e8Odds:750,s16Odds:105,r1Odds:-950,em:14.7,conf:"high",pub:{s16:0.42,e8:0.22,ff:0.08,ch:0.016}},
+  {seed:5,name:"Texas Tech",region:"South",record:"22-10",cOdds:13000,fOdds:3500,ffOdds:1700,e8Odds:600,s16Odds:105,r1Odds:-325,em:13.5,conf:"medium",pub:{s16:0.46,e8:0.24,ff:0.09,ch:0.02}},
+  {seed:6,name:"Tennessee",region:"South",record:"22-11",cOdds:12000,fOdds:4000,ffOdds:1300,e8Odds:400,s16Odds:130,r1Odds:-200,em:12.8,conf:"high",pub:{s16:0.36,e8:0.17,ff:0.06,ch:0.013}},
+  {seed:7,name:"Kentucky",region:"South",record:"21-13",cOdds:20000,fOdds:9000,ffOdds:4500,e8Odds:1300,s16Odds:550,r1Odds:-166,em:10.4,conf:"medium",pub:{s16:0.26,e8:0.11,ff:0.038,ch:0.008}},
+  {seed:8,name:"Clemson",region:"South",record:"24-10",cOdds:25000,fOdds:10000,ffOdds:6500,e8Odds:1900,s16Odds:750,r1Odds:114,em:10.2,conf:"medium",pub:{s16:0.22,e8:0.09,ff:0.028,ch:0.006}},
+  {seed:9,name:"Iowa",region:"South",record:"21-12",cOdds:30000,fOdds:14000,ffOdds:4500,e8Odds:1600,s16Odds:700,r1Odds:-135,em:8.6,conf:"medium",pub:{s16:0.11,e8:0.045,ff:0.015,ch:0.003}},
+  {seed:10,name:"Santa Clara",region:"South",record:"26-8",cOdds:50000,fOdds:20000,ffOdds:7500,e8Odds:1900,s16Odds:800,r1Odds:140,em:7.5,conf:"medium",pub:{s16:0.08,e8:0.032,ff:0.010,ch:0.0018}},
+  {seed:11,name:"SMU",region:"South",record:"20-13",cOdds:50000,fOdds:25000,ffOdds:20000,e8Odds:4500,s16Odds:1000,r1Odds:-310,em:8.2,conf:"medium",pub:{s16:0.06,e8:0.022,ff:0.007,ch:0.0014}},
+  {seed:12,name:"Akron",region:"South",record:"29-5",cOdds:100000,fOdds:40000,ffOdds:50000,e8Odds:14000,s16Odds:2000,r1Odds:260,em:6.1,conf:"low",pub:{s16:0.03,e8:0.011,ff:0.0035,ch:0.0007}},
+  {seed:13,name:"Hofstra",region:"South",record:"24-10",cOdds:200000,fOdds:40000,ffOdds:40000,e8Odds:10000,s16Odds:2200,r1Odds:625,em:4.8,conf:"low",pub:{s16:0.022,e8:0.007,ff:0.002,ch:0.0004}},
+  {seed:14,name:"Wright State",region:"South",record:"23-11",cOdds:200000,fOdds:40000,ffOdds:80000,e8Odds:35000,s16Odds:10000,r1Odds:1200,em:2.5,conf:"low",pub:{s16:0.012,e8:0.004,ff:0.0012,ch:0.0002}},
+  {seed:15,name:"Tennessee State",region:"South",record:"23-9",cOdds:200000,fOdds:40000,ffOdds:80000,e8Odds:40000,s16Odds:30000,r1Odds:2200,em:0.9,conf:"low",pub:{s16:0.003,e8:0.001,ff:0.0004,ch:0.00008}},
+  {seed:16,name:"Lehigh",region:"South",record:"18-16",cOdds:200000,fOdds:40000,ffOdds:100000,e8Odds:40000,s16Odds:50000,r1Odds:2500,em:-2.1,conf:"low",pub:{s16:0.002,e8:0.0007,ff:0.0002,ch:0.00004}},
+  {seed:1,name:"Arizona",region:"West",record:"32-2",cOdds:390,fOdds:180,ffOdds:-120,e8Odds:-275,s16Odds:-700,r1Odds:-100000,em:24.3,conf:"high",pub:{s16:0.87,e8:0.73,ff:0.55,ch:0.20}},
+  {seed:2,name:"Houston",region:"West",record:"28-6",cOdds:1000,fOdds:475,ffOdds:250,e8Odds:110,s16Odds:-280,r1Odds:-8000,em:20.5,conf:"high",pub:{s16:0.70,e8:0.52,ff:0.28,ch:0.08}},
+  {seed:3,name:"Gonzaga",region:"West",record:"30-3",cOdds:4000,fOdds:1800,ffOdds:500,e8Odds:145,s16Odds:-250,r1Odds:-3200,em:17.8,conf:"high",pub:{s16:0.62,e8:0.44,ff:0.18,ch:0.05}},
+  {seed:4,name:"Kansas",region:"West",record:"23-10",cOdds:6000,fOdds:3000,ffOdds:1500,e8Odds:650,s16Odds:125,r1Odds:-1200,em:15.2,conf:"high",pub:{s16:0.42,e8:0.22,ff:0.08,ch:0.016}},
+  {seed:5,name:"Vanderbilt",region:"West",record:"26-7",cOdds:7500,fOdds:3000,ffOdds:1100,e8Odds:450,s16Odds:105,r1Odds:-625,em:14.3,conf:"medium",pub:{s16:0.44,e8:0.23,ff:0.09,ch:0.018}},
+  {seed:6,name:"BYU",region:"West",record:"23-11",cOdds:25000,fOdds:13000,ffOdds:6000,e8Odds:1400,s16Odds:425,r1Odds:-150,em:12.1,conf:"medium",pub:{s16:0.32,e8:0.15,ff:0.055,ch:0.011}},
+  {seed:7,name:"Saint Mary's",region:"West",record:"27-5",cOdds:30000,fOdds:7500,ffOdds:3500,e8Odds:1100,s16Odds:360,r1Odds:-162,em:11.3,conf:"medium",pub:{s16:0.27,e8:0.11,ff:0.038,ch:0.007}},
+  {seed:8,name:"Villanova",region:"West",record:"24-8",cOdds:25000,fOdds:18000,ffOdds:7500,e8Odds:2500,s16Odds:950,r1Odds:114,em:9.5,conf:"medium",pub:{s16:0.20,e8:0.08,ff:0.025,ch:0.005}},
+  {seed:9,name:"Utah State",region:"West",record:"28-6",cOdds:40000,fOdds:20000,ffOdds:9000,e8Odds:2500,s16Odds:1000,r1Odds:-135,em:9.3,conf:"medium",pub:{s16:0.12,e8:0.048,ff:0.016,ch:0.003}},
+  {seed:10,name:"Texas A&M",region:"West",record:"21-11",cOdds:35000,fOdds:40000,ffOdds:14000,e8Odds:3000,s16Odds:900,r1Odds:136,em:8.1,conf:"medium",pub:{s16:0.09,e8:0.036,ff:0.011,ch:0.002}},
+  {seed:11,name:"NC State",region:"West",record:"20-13",cOdds:30000,fOdds:25000,ffOdds:12000,e8Odds:3000,s16Odds:1200,r1Odds:-115,em:7.2,conf:"medium",pub:{s16:0.07,e8:0.028,ff:0.009,ch:0.0018}},
+  {seed:12,name:"McNeese",region:"West",record:"28-5",cOdds:100000,fOdds:35000,ffOdds:40000,e8Odds:7500,s16Odds:1700,r1Odds:455,em:5.8,conf:"low",pub:{s16:0.03,e8:0.011,ff:0.003,ch:0.0006}},
+  {seed:13,name:"California Baptist",region:"West",record:"25-8",cOdds:200000,fOdds:40000,ffOdds:50000,e8Odds:25000,s16Odds:2200,r1Odds:750,em:3.2,conf:"low",pub:{s16:0.02,e8:0.007,ff:0.002,ch:0.0004}},
+  {seed:14,name:"Kennesaw State",region:"West",record:"21-13",cOdds:200000,fOdds:40000,ffOdds:40000,e8Odds:40000,s16Odds:12000,r1Odds:1400,em:1.9,conf:"low",pub:{s16:0.01,e8:0.003,ff:0.001,ch:0.0002}},
+  {seed:15,name:"Idaho",region:"West",record:"13-20",cOdds:200000,fOdds:40000,ffOdds:100000,e8Odds:40000,s16Odds:9000,r1Odds:2200,em:-4.2,conf:"low",pub:{s16:0.002,e8:0.0008,ff:0.0002,ch:0.00004}},
+  {seed:16,name:"LIU",region:"West",record:"24-10",cOdds:200000,fOdds:100000,ffOdds:40000,e8Odds:35000,s16Odds:40000,r1Odds:5000,em:-1.8,conf:"low",pub:{s16:0.001,e8:0.0005,ff:0.0001,ch:0.00002}}
+];
+
+const FIRST_FOUR = [
+  {region:"Midwest",seedSlot:16,teamA:"UMBC",teamB:"Howard",mlA:-120,mlB:100,spread:-1.5,total:139.5,defaultWinner:"UMBC"},
+  {region:"West",seedSlot:11,teamA:"NC State",teamB:"Texas",mlA:-115,mlB:-105,spread:-1.5,total:158.5,defaultWinner:"NC State"},
+  {region:"South",seedSlot:16,teamA:"Lehigh",teamB:"Prairie View A&M",mlA:-166,mlB:140,spread:-3.5,total:142.5,defaultWinner:"Lehigh"},
+  {region:"South",seedSlot:11,teamA:"SMU",teamB:"Miami (OH)",mlA:-310,mlB:250,spread:-6.5,total:164.5,defaultWinner:"SMU"}
+];
+
+const FIRST_ROUND_MATCHUPS = [
+  {region:"East",game:1,highSeed:{seed:1,name:"Duke"},lowSeed:{seed:16,name:"Siena"},spread:-29.5,moneylineHigh:-20000,moneylineLow:3500,total:136.5},
+  {region:"East",game:2,highSeed:{seed:8,name:"Ohio State"},lowSeed:{seed:9,name:"TCU"},spread:-2.5,moneylineHigh:-142,moneylineLow:120,total:146.5},
+  {region:"East",game:3,highSeed:{seed:5,name:"St. John's"},lowSeed:{seed:12,name:"Northern Iowa"},spread:-10.5,moneylineHigh:-600,moneylineLow:440,total:131.5},
+  {region:"East",game:4,highSeed:{seed:4,name:"Nebraska"},lowSeed:{seed:13,name:"Troy"},spread:-12.5,moneylineHigh:-1000,moneylineLow:650,total:137.5},
+  {region:"East",game:5,highSeed:{seed:6,name:"North Carolina"},lowSeed:{seed:11,name:"VCU"},spread:-2.5,moneylineHigh:-142,moneylineLow:120,total:154.5},
+  {region:"East",game:6,highSeed:{seed:3,name:"Illinois"},lowSeed:{seed:14,name:"Pennsylvania"},spread:-24.5,moneylineHigh:-6500,moneylineLow:2000,total:150.5},
+  {region:"East",game:7,highSeed:{seed:7,name:"UCLA"},lowSeed:{seed:10,name:"UCF"},spread:-5.5,moneylineHigh:-245,moneylineLow:200,total:152.5},
+  {region:"East",game:8,highSeed:{seed:2,name:"UConn"},lowSeed:{seed:15,name:"Furman"},spread:-20.5,moneylineHigh:-4500,moneylineLow:1700,total:137.5},
+  {region:"Midwest",game:9,highSeed:{seed:1,name:"Michigan"},lowSeed:{seed:16,name:"UMBC"},spread:-27.0,moneylineHigh:-5000,moneylineLow:3000,total:140.0},
+  {region:"Midwest",game:10,highSeed:{seed:8,name:"Georgia"},lowSeed:{seed:9,name:"Saint Louis"},spread:-2.5,moneylineHigh:-162,moneylineLow:136,total:169.5},
+  {region:"Midwest",game:11,highSeed:{seed:5,name:"Wisconsin"},lowSeed:{seed:12,name:"High Point"},spread:-9.5,moneylineHigh:-470,moneylineLow:360,total:164.5},
+  {region:"Midwest",game:12,highSeed:{seed:4,name:"Arkansas"},lowSeed:{seed:13,name:"Hawai'i"},spread:-15.5,moneylineHigh:-1350,moneylineLow:800,total:160.5},
+  {region:"Midwest",game:13,highSeed:{seed:6,name:"Louisville"},lowSeed:{seed:11,name:"South Florida"},spread:-5.5,moneylineHigh:-225,moneylineLow:185,total:165.5},
+  {region:"Midwest",game:14,highSeed:{seed:3,name:"Michigan State"},lowSeed:{seed:14,name:"North Dakota State"},spread:-16.5,moneylineHigh:-1800,moneylineLow:1000,total:143.5},
+  {region:"Midwest",game:15,highSeed:{seed:7,name:"Miami"},lowSeed:{seed:10,name:"Missouri"},spread:-1.5,moneylineHigh:-130,moneylineLow:110,total:147.5},
+  {region:"Midwest",game:16,highSeed:{seed:2,name:"Purdue"},lowSeed:{seed:15,name:"Queens University"},spread:-25.5,moneylineHigh:-8000,moneylineLow:2200,total:163.5},
+  {region:"South",game:17,highSeed:{seed:1,name:"Florida"},lowSeed:{seed:16,name:"Lehigh"},spread:-27.0,moneylineHigh:-5000,moneylineLow:2500,total:142.0},
+  {region:"South",game:18,highSeed:{seed:8,name:"Clemson"},lowSeed:{seed:9,name:"Iowa"},spread:2.5,moneylineHigh:114,moneylineLow:-135,total:129.5},
+  {region:"South",game:19,highSeed:{seed:5,name:"Texas Tech"},lowSeed:{seed:12,name:"Akron"},spread:-7.5,moneylineHigh:-325,moneylineLow:260,total:156.5},
+  {region:"South",game:20,highSeed:{seed:4,name:"Alabama"},lowSeed:{seed:13,name:"Hofstra"},spread:-12.5,moneylineHigh:-950,moneylineLow:625,total:159.5},
+  {region:"South",game:21,highSeed:{seed:6,name:"Tennessee"},lowSeed:{seed:11,name:"SMU"},spread:-4.5,moneylineHigh:-200,moneylineLow:160,total:155.0},
+  {region:"South",game:22,highSeed:{seed:3,name:"Virginia"},lowSeed:{seed:14,name:"Wright State"},spread:-18.5,moneylineHigh:-2400,moneylineLow:1200,total:145.5},
+  {region:"South",game:23,highSeed:{seed:7,name:"Kentucky"},lowSeed:{seed:10,name:"Santa Clara"},spread:-3.5,moneylineHigh:-166,moneylineLow:140,total:160.5},
+  {region:"South",game:24,highSeed:{seed:2,name:"Iowa State"},lowSeed:{seed:15,name:"Tennessee State"},spread:-25.5,moneylineHigh:-8000,moneylineLow:2200,total:149.5},
+  {region:"West",game:25,highSeed:{seed:1,name:"Arizona"},lowSeed:{seed:16,name:"LIU"},spread:-31.5,moneylineHigh:-100000,moneylineLow:5000,total:151.5},
+  {region:"West",game:26,highSeed:{seed:8,name:"Villanova"},lowSeed:{seed:9,name:"Utah State"},spread:2.5,moneylineHigh:114,moneylineLow:-135,total:147.5},
+  {region:"West",game:27,highSeed:{seed:5,name:"Vanderbilt"},lowSeed:{seed:12,name:"McNeese"},spread:-11.5,moneylineHigh:-625,moneylineLow:455,total:150.5},
+  {region:"West",game:28,highSeed:{seed:4,name:"Kansas"},lowSeed:{seed:13,name:"California Baptist"},spread:-14.5,moneylineHigh:-1200,moneylineLow:750,total:137.5},
+  {region:"West",game:29,highSeed:{seed:6,name:"BYU"},lowSeed:{seed:11,name:"NC State"},spread:-2.5,moneylineHigh:-150,moneylineLow:125,total:155.0},
+  {region:"West",game:30,highSeed:{seed:3,name:"Gonzaga"},lowSeed:{seed:14,name:"Kennesaw State"},spread:-20.5,moneylineHigh:-3200,moneylineLow:1400,total:154.5},
+  {region:"West",game:31,highSeed:{seed:7,name:"Saint Mary's"},lowSeed:{seed:10,name:"Texas A&M"},spread:-3.5,moneylineHigh:-162,moneylineLow:136,total:147.5},
+  {region:"West",game:32,highSeed:{seed:2,name:"Houston"},lowSeed:{seed:15,name:"Idaho"},spread:-23.5,moneylineHigh:-8000,moneylineLow:2200,total:136.5}
+];
+
+
+function americanToImplied(odds) {
+  if (!odds || odds === 0) return 0.5;
+  if (odds > 0) return 100 / (odds + 100);
+  return Math.abs(odds) / (Math.abs(odds) + 100);
+}
+
+function kenpomH2H(emA, emB) {
+  var delta = emA - emB;
+  return 1 / (1 + Math.pow(10, -delta / 10));
+}
+
+function blendProb(kenpom, vegas) {
+  return 0.6 * kenpom + 0.4 * vegas;
+}
+
+function pct(val) {
+  return (val * 100).toFixed(1) + '%';
+}
+
+function fmtOdds(odds) {
+  return odds > 0 ? '+' + odds : '' + odds;
+}
+
+function fuzzyFind(name, teamArr) {
+  if (!name) return null;
+  var n = name.toLowerCase().trim();
+  for (var i = 0; i < teamArr.length; i++) {
+    if (teamArr[i].name.toLowerCase().includes(n) || n.includes(teamArr[i].name.toLowerCase())) {
+      return teamArr[i];
+    }
+  }
+  return null;
+}
+
+function getTeam(name, region) {
+  for (var i = 0; i < TEAMS.length; i++) {
+    if (TEAMS[i].name === name && (!region || TEAMS[i].region === region)) return TEAMS[i];
+  }
+  for (var i = 0; i < TEAMS.length; i++) {
+    if (TEAMS[i].name === name) return TEAMS[i];
+  }
+  return null;
+}
+
+(function initDerivedProbs() {
+  TEAMS.forEach(function(t) {
+    t.championWinProb = americanToImplied(t.cOdds);
+    t.finalsWinProb = americanToImplied(t.fOdds);
+    t.finalFourWinProb = americanToImplied(t.ffOdds);
+    t.eliteEightWinProb = americanToImplied(t.e8Odds);
+    t.sweet16WinProb = americanToImplied(t.s16Odds);
+    t.r1WinProb = t.r1Odds ? americanToImplied(t.r1Odds) : 0.5;
+  });
+  FIRST_ROUND_MATCHUPS.forEach(function(m) {
+    m.highSeedWinProb = americanToImplied(m.moneylineHigh);
+  });
+})();
+
+function parseKenpomInput(text) {
+  var map = {};
+  if (!text || !text.trim()) return map;
+  var lines = text.split('\n');
+  lines.forEach(function(line) {
+    line = line.trim();
+    if (!line) return;
+    var parts = line.split(/\s+/);
+    var lastPart = parts[parts.length - 1];
+    var num = parseFloat(lastPart);
+    if (!isNaN(num)) {
+      var teamName = parts.slice(0, parts.length - 1).join(' ').toLowerCase();
+      map[teamName] = num;
+    }
+  });
+  return map;
+}
+
+function parsePickPctInput(text) {
+  var map = {};
+  if (!text || !text.trim()) return map;
+  var lines = text.split('\n');
+  lines.forEach(function(line) {
+    line = line.trim();
+    if (!line) return;
+    var parts = line.split(/[|,\t]+/);
+    if (parts.length >= 5) {
+      var teamName = parts[0].trim().toLowerCase();
+      map[teamName] = {
+        s16: parseFloat(parts[1]) / 100 || 0,
+        e8: parseFloat(parts[2]) / 100 || 0,
+        ff: parseFloat(parts[3]) / 100 || 0,
+        ch: parseFloat(parts[4]) / 100 || 0
+      };
+    }
+  });
+  return map;
+}
+
+function parseConstraints(protectedText, eliminateText) {
+  var roundMap = {
+    '64': 1, 'first': 1, 'round of 64': 1,
+    '32': 2, 'round of 32': 2, 'second round': 2,
+    'sweet 16': 3, 'sweet sixteen': 3, 's16': 3,
+    'elite 8': 4, 'elite eight': 4, 'e8': 4,
+    'final four': 5, 'f4': 5, 'final 4': 5,
+    'championship': 6, 'finals': 6, 'champion': 6
+  };
+  var constraints = { protect: {}, eliminate: {} };
+  function parseRound(str) {
+    var lower = str.toLowerCase();
+    for (var key in roundMap) {
+      if (lower.includes(key)) return roundMap[key];
+    }
+    return null;
+  }
+  if (protectedText) {
+    var lines = protectedText.split('\n');
+    lines.forEach(function(line) {
+      line = line.trim();
+      if (!line) return;
+      var round = parseRound(line);
+      var team = fuzzyFind(line.replace(/(must|reach|to|the|final four|elite eight|sweet|sixteen|championship|final|four|round|of|\d+)/gi, '').trim(), TEAMS);
+      if (team && round) constraints.protect[team.name] = round;
+      else if (team) constraints.protect[team.name] = 5;
+    });
+  }
+  if (eliminateText) {
+    var lines2 = eliminateText.split('\n');
+    lines2.forEach(function(line) {
+      line = line.trim();
+      if (!line) return;
+      var round = parseRound(line);
+      var team = fuzzyFind(line.replace(/(knock out|eliminate|loses?|out|in|round|of|\d+)/gi, '').trim(), TEAMS);
+      if (team && round) constraints.eliminate[team.name] = round;
+      else if (team) constraints.eliminate[team.name] = 2;
+    });
+  }
+  return constraints;
+}
+
+function getPickPct(team, round, pickPctOverride) {
+  var key = round <= 1 ? 's16' : round === 2 ? 's16' : round === 3 ? 's16' : round === 4 ? 'e8' : round === 5 ? 'ff' : 'ch';
+  if (round === 3) key = 's16';
+  if (round === 4) key = 'e8';
+  if (round === 5) key = 'ff';
+  if (round === 6) key = 'ch';
+  var lname = team.name.toLowerCase();
+  if (pickPctOverride && pickPctOverride[lname]) return pickPctOverride[lname][key] || team.pub[key];
+  return team.pub[key];
+}
+
+function computeBlended(teamA, teamB, kenpomOverride, round) {
+  var emA = kenpomOverride && kenpomOverride[teamA.name.toLowerCase()] !== undefined ? kenpomOverride[teamA.name.toLowerCase()] : teamA.em;
+  var emB = kenpomOverride && kenpomOverride[teamB.name.toLowerCase()] !== undefined ? kenpomOverride[teamB.name.toLowerCase()] : teamB.em;
+  var kenpomProb = kenpomH2H(emA, emB);
+  var vegasProb;
+  if (round === 1) {
+    var matchup = null;
+    for (var i = 0; i < FIRST_ROUND_MATCHUPS.length; i++) {
+      var m = FIRST_ROUND_MATCHUPS[i];
+      if ((m.highSeed.name === teamA.name && m.lowSeed.name === teamB.name) ||
+          (m.highSeed.name === teamB.name && m.lowSeed.name === teamA.name)) {
+        matchup = m;
+        break;
+      }
+    }
+    if (matchup) {
+      var highProb = americanToImplied(matchup.moneylineHigh);
+      vegasProb = matchup.highSeed.name === teamA.name ? highProb : 1 - highProb;
+    } else {
+      vegasProb = teamA.r1WinProb || 0.5;
+    }
+  } else {
+    var aVegas = teamA.championWinProb;
+    var bVegas = teamB.championWinProb;
+    var total = aVegas + bVegas;
+    vegasProb = total > 0 ? aVegas / total : 0.5;
+  }
+  var blended = blendProb(kenpomProb, vegasProb);
+  var divergence = Math.abs(kenpomProb - vegasProb) >= 0.15;
+  return { probA: blended, probB: 1 - blended, kenpomProb: kenpomProb, vegasProb: vegasProb, divergence: divergence };
+}
+
+function resolveGame(teamA, teamB, kenpomOverride, pickPctOverride, upsetTolerance, constraints, round, chaosUpsetsLeft, upsets, flags) {
+  if (!teamA) return teamB;
+  if (!teamB) return teamA;
+  var result = computeBlended(teamA, teamB, kenpomOverride, round);
+  var probA = result.probA;
+  var probB = result.probB;
+  if (result.divergence) {
+    flags.push({ teamA: teamA, teamB: teamB, kenpomProb: result.kenpomProb, vegasProb: result.vegasProb, delta: Math.abs(result.kenpomProb - result.vegasProb) });
+  }
+  var fav = probA >= probB ? teamA : teamB;
+  var dog = probA >= probB ? teamB : teamA;
+  var favProb = probA >= probB ? probA : probB;
+  var dogProb = 1 - favProb;
+  var dogPick = getPickPct(dog, round, pickPctOverride);
+  var pickUpset = false;
+  if (upsetTolerance === 'safe') {
+    pickUpset = dogProb > 0.45 && dogPick < 0.30;
+  } else if (upsetTolerance === 'moderate') {
+    pickUpset = dogProb > 0.38 && dogPick < 0.25;
+  } else if (upsetTolerance === 'chaotic') {
+    var favSeed = fav.seed || 1;
+    var dogSeed = dog.seed || 16;
+    pickUpset = chaosUpsetsLeft > 0 && dogProb > 0.28 && Math.abs(favSeed - dogSeed) >= 2;
+  }
+  if (Math.abs(probA - probB) < 0.05) {
+    var pickA = getPickPct(teamA, round, pickPctOverride);
+    var pickB = getPickPct(teamB, round, pickPctOverride);
+    fav = pickA <= pickB ? teamA : teamB;
+    dog = pickA <= pickB ? teamB : teamA;
+    pickUpset = false;
+  }
+  var winner, loser;
+  if (pickUpset) {
+    winner = dog; loser = fav;
+    upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed) });
+    return winner;
+  }
+  if (constraints.protect && constraints.protect[fav.name]) return fav;
+  if (constraints.protect && constraints.protect[dog.name] && (constraints.protect[dog.name] >= round)) {
+    upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed), forced: true });
+    return dog;
+  }
+  if (constraints.eliminate && constraints.eliminate[fav.name] && constraints.eliminate[fav.name] <= round) {
+    upsets.push({ winner: dog, loser: fav, round: round, seedDiff: Math.abs(fav.seed - dog.seed), forced: true });
+    return dog;
+  }
+  return fav;
+}
+
+function buildRegionSlots(region) {
+  var r = TEAMS.filter(function(t) { return t.region === region; });
+  var bySlot = {};
+  var slotOrder = [1,16,8,9,5,12,4,13,6,11,3,14,7,10,2,15];
+  slotOrder.forEach(function(seed, idx) {
+    var team = r.find(function(t) { return t.seed === seed; });
+    if (team) bySlot[idx] = team;
+  });
+  return slotOrder.map(function(seed, idx) { return bySlot[idx]; });
+}
+
+function simulateRegion(region, kenpomOverride, pickPctOverride, upsetTolerance, constraints) {
+  var slots = buildRegionSlots(region);
+  var upsets = [], flags = [];
+  var chaosUpsetsLeft = upsetTolerance === 'chaotic' ? 4 : 0;
+  var r1 = [];
+  for (var i = 0; i < 8; i++) {
+    var w = resolveGame(slots[i*2], slots[i*2+1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 1, chaosUpsetsLeft, upsets, flags);
+    if (upsetTolerance === 'chaotic' && upsets.length > (4 - chaosUpsetsLeft)) chaosUpsetsLeft--;
+    r1.push(w);
+  }
+  var r2 = [];
+  for (var i = 0; i < 4; i++) {
+    var w = resolveGame(r1[i*2], r1[i*2+1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 2, chaosUpsetsLeft, upsets, flags);
+    if (upsetTolerance === 'chaotic' && upsets.length > (4 - chaosUpsetsLeft)) chaosUpsetsLeft--;
+    r2.push(w);
+  }
+  var s16 = [];
+  for (var i = 0; i < 2; i++) {
+    var w = resolveGame(r2[i*2], r2[i*2+1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 3, chaosUpsetsLeft, upsets, flags);
+    s16.push(w);
+  }
+  var e8Winner = resolveGame(s16[0], s16[1], kenpomOverride, pickPctOverride, upsetTolerance, constraints, 4, chaosUpsetsLeft, upsets, flags);
+  return { sweet16: r2, elite8: s16, regionWinner: e8Winner, upsets: upsets, flags: flags };
+}
+
+function identifyLeveragePlays(allTeams, pickPctOverride, upsetTolerance) {
+  var plays = [];
+  var roundNames = {3: 'Sweet 16', 4: 'Elite Eight', 5: 'Final Four', 6: 'Championship'};
+  allTeams.forEach(function(team) {
+    [3,4,5,6].forEach(function(round) {
+      var pubKey = round === 3 ? 's16' : round === 4 ? 'e8' : round === 5 ? 'ff' : 'ch';
+      var lname = team.name.toLowerCase();
+      var pub = (pickPctOverride && pickPctOverride[lname]) ? pickPctOverride[lname][pubKey] : team.pub[pubKey];
+      var vegasProb = round === 3 ? team.sweet16WinProb : round === 4 ? team.eliteEightWinProb : round === 5 ? team.finalFourWinProb : team.championWinProb;
+      var blended = blendProb(kenpomH2H(team.em, 0), vegasProb);
+      var threshold = upsetTolerance === 'safe' ? 0.45 : 0.38;
+      if (blended > threshold && pub < 0.25) {
+        plays.push({ team: team, round: roundNames[round], blendedWinProb: blended, publicPickPct: pub, rationale: team.name + ' is undervalued in public brackets (only ' + pct(pub) + ' picking them) but has ' + pct(blended) + ' blended win probability for ' + roundNames[round] + '.' });
+      }
+    });
+  });
+  plays.sort(function(a, b) { return (b.blendedWinProb - b.publicPickPct) - (a.blendedWinProb - a.publicPickPct); });
+  return plays.slice(0, 8);
+}
+
+function selectAutoChampion(teams, kenpomOverride, pickPctOverride) {
+  var candidates = teams.filter(function(t) {
+    var blend = blendProb(kenpomH2H(t.em, 0), t.championWinProb);
+    return blend >= 0.05;
+  });
+  candidates.sort(function(a, b) {
+    var blendA = blendProb(kenpomH2H(a.em, 0), a.championWinProb);
+    var blendB = blendProb(kenpomH2H(b.em, 0), b.championWinProb);
+    var leverageA = blendA - a.pub.ch;
+    var leverageB = blendB - b.pub.ch;
+    return leverageB - leverageA;
+  });
+  var contrarian = candidates.find(function(t) {
+    return t.pub.ch < 0.20 && t.championWinProb >= 0.05;
+  });
+  return contrarian || candidates[0] || teams[0];
+}
+
+function generateBracket(formData) {
+  var kenpomOverride = parseKenpomInput(formData.kenpomData);
+  var pickPctOverride = parsePickPctInput(formData.publicPickData);
+  var constraints = parseConstraints(formData.protectedTeams, formData.eliminateTeams);
+  var warnings = [];
+  var allUpsets = [], allFlags = [];
+
+  var eastResult = simulateRegion('East', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
+  var midwestResult = simulateRegion('Midwest', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
+  var southResult = simulateRegion('South', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
+  var westResult = simulateRegion('West', kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints);
+
+  allUpsets = eastResult.upsets.concat(midwestResult.upsets).concat(southResult.upsets).concat(westResult.upsets);
+  allFlags = eastResult.flags.concat(midwestResult.flags).concat(southResult.flags).concat(westResult.flags);
+
+  var ffTeams = [eastResult.regionWinner, midwestResult.regionWinner, southResult.regionWinner, westResult.regionWinner];
+  var ff1 = resolveGame(ffTeams[0], ffTeams[1], kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 5, 0, allUpsets, allFlags);
+  var ff2 = resolveGame(ffTeams[2], ffTeams[3], kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 5, 0, allUpsets, allFlags);
+  var champion = resolveGame(ff1, ff2, kenpomOverride, pickPctOverride, formData.upsetTolerance, constraints, 6, 0, allUpsets, allFlags);
+
+  if (formData.preferredChampion && formData.preferredChampion.trim()) {
+    var preferred = fuzzyFind(formData.preferredChampion.trim(), TEAMS);
+    if (preferred) {
+      champion = preferred;
+      warnings.push('Preferred champion "' + preferred.name + '" locked in per your request.');
+      if (preferred.championWinProb < 0.05) {
+        warnings.push(preferred.name + ' has a low win probability (' + pct(preferred.championWinProb) + ') — this is a high-risk pick.');
+      }
+    } else {
+      warnings.push('Could not find "' + formData.preferredChampion + '" in team database. Using optimal champion selection.');
+    }
+  }
+
+  var sweet16 = eastResult.sweet16.concat(midwestResult.sweet16).concat(southResult.sweet16).concat(westResult.sweet16);
+  var elite8 = eastResult.elite8.concat(midwestResult.elite8).concat(southResult.elite8).concat(westResult.elite8);
+  var finalFour = ffTeams;
+
+  var leveragePlays = identifyLeveragePlays(TEAMS, pickPctOverride, formData.upsetTolerance);
+
+  var topUpsetsForDisplay = allUpsets.filter(function(u) { return u.seedDiff >= 3; }).sort(function(a, b) { return b.seedDiff - a.seedDiff; }).slice(0, 6);
+
+  var uniqueFlags = [];
+  var seenFlags = {};
+  allFlags.forEach(function(f) {
+    var key = [f.teamA.name, f.teamB.name].sort().join('|');
+    if (!seenFlags[key]) { seenFlags[key] = true; uniqueFlags.push(f); }
+  });
+
+  var poolSize = parseInt(formData.poolSize) || 20;
+  var rationale = buildRationale(champion, finalFour, leveragePlays, topUpsetsForDisplay, poolSize, formData);
+
+  return {
+    champion: champion,
+    finalFour: finalFour,
+    elite8: elite8,
+    sweet16: sweet16,
+    leveragePlays: leveragePlays,
+    upsets: topUpsetsForDisplay,
+    divergenceFlags: uniqueFlags,
+    poolRationale: rationale,
+    constraintWarnings: warnings
+  };
+}
+
+function buildRationale(champion, finalFour, leveragePlays, upsets, poolSize, formData) {
+  var champPub = pct(champion.pub.ch);
+  var topLeverage = leveragePlays[0];
+  var champBlend = pct(blendProb(kenpomH2H(champion.em, 0), champion.championWinProb));
+  var upsetCount = upsets.length;
+  var ffNames = finalFour.map(function(t) { return t ? t.name : 'TBD'; }).join(', ');
+
+  var r = 'This bracket is built to beat a field of ' + poolSize + ' entries by targeting high-value contrarian picks. ';
+  r += champion.name + ' is selected as champion with ' + champBlend + ' blended win probability while only ' + champPub + ' of public brackets pick them — a significant leverage edge. ';
+  if (topLeverage) {
+    r += topLeverage.team.name + ' stands out as the top leverage play: ' + topLeverage.rationale + ' ';
+  }
+  if (upsetCount > 0) {
+    r += 'The bracket targets ' + upsetCount + ' significant upsets to differentiate from the chalk-heavy public field, giving you an edge when these chalky picks bust brackets around you.';
+  } else {
+    r += 'The Final Four of ' + ffNames + ' balances data-driven probability with differentiation from the public consensus.';
+  }
+  return r;
+}
+
+function buildClipboardText(result) {
+  var lines = [];
+  lines.push('=== BRACKET GENIE — 2026 NCAA TOURNAMENT ===');
+  lines.push('');
+  lines.push('CHAMPION: ' + (result.champion ? result.champion.name + ' (' + result.champion.seed + '-seed)' : 'TBD'));
+  lines.push('');
+  lines.push('FINAL FOUR:');
+  result.finalFour.forEach(function(t) { if (t) lines.push('  • ' + t.name + ' (' + t.seed + '-seed, ' + t.region + ')'); });
+  lines.push('');
+  lines.push('ELITE EIGHT:');
+  result.elite8.forEach(function(t) { if (t) lines.push('  • ' + t.name + ' (' + t.seed + '-seed, ' + t.region + ')'); });
+  lines.push('');
+  lines.push('SWEET SIXTEEN:');
+  var regions = ['East','Midwest','South','West'];
+  regions.forEach(function(region) {
+    lines.push('  ' + region + ':');
+    result.sweet16.filter(function(t) { return t && t.region === region; }).forEach(function(t) { lines.push('    • ' + t.name + ' (' + t.seed + '-seed)'); });
+  });
+  lines.push('');
+  lines.push('TOP LEVERAGE PLAYS:');
+  result.leveragePlays.slice(0, 5).forEach(function(lp) {
+    lines.push('  • ' + lp.team.name + ' — ' + lp.round + ' | Win Prob: ' + pct(lp.blendedWinProb) + ' | Public: ' + pct(lp.publicPickPct));
+  });
+  lines.push('');
+  lines.push('POOL-WINNING RATIONALE:');
+  lines.push(result.poolRationale);
+  lines.push('');
+  lines.push('Generated by Bracket Genie — bracketgenie.vercel.app');
+  return lines.join('\n');
+}
+
+
+var ROUND_NAMES = ['','Round of 64','Round of 32','Sweet 16','Elite Eight','Final Four','Championship'];
+
+function roundLabel(n) {
+  return ROUND_NAMES[n] || ('Round ' + n);
+}
+
+function renderChampion(team) {
+  if (!team) return '<p style="color:#aaa">No champion selected</p>';
+  var blend = blendProb(kenpomH2H(team.em, 0), team.championWinProb);
+  return '<div class="champion-seed-badge">' + team.seed + '-SEED</div>' +
+    '<div class="champion-name">' + team.name.toUpperCase() + '</div>' +
+    '<div class="champion-region">' + team.region + ' Region</div>' +
+    '<div class="champion-stats">' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + pct(blend) + '</div><div class="champion-stat-label">Blended Win Prob</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + pct(team.pub.ch) + '</div><div class="champion-stat-label">Public Picking Them</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + fmtOdds(team.cOdds) + '</div><div class="champion-stat-label">Vegas Odds</div></div>' +
+      '<div class="champion-stat"><div class="champion-stat-value">' + team.record + '</div><div class="champion-stat-label">Record</div></div>' +
+    '</div>';
+}
+
+function makeTeamCard(team, showRegion) {
+  if (!team) return '<div class="team-card"><div class="team-card-seed">?</div><div class="team-card-name">TBD</div></div>';
+  var blend = blendProb(kenpomH2H(team.em, 0), team.championWinProb);
+  var regionHtml = showRegion ? '<div class="team-card-region">' + team.region + '</div>' : '';
+  return '<div class="team-card">' +
+    '<div class="team-card-seed">' + team.seed + '</div>' +
+    '<div class="team-card-name">' + team.name + '</div>' +
+    regionHtml +
+    '<div class="team-card-prob">' + pct(blend) + '</div>' +
+  '</div>';
+}
+
+function renderTeamGrid(teams, containerId, showRegion) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = teams.filter(Boolean).map(function(t) { return makeTeamCard(t, showRegion); }).join('');
+}
+
+function renderSweetSixteen(teams) {
+  var el = document.getElementById('sweetSixteenContent');
+  if (!el) return;
+  var regions = ['East','Midwest','South','West'];
+  el.innerHTML = regions.map(function(region) {
+    var regionTeams = teams.filter(function(t) { return t && t.region === region; });
+    return '<div class="s16-region-group">' +
+      '<div class="s16-region-label">' + region + '</div>' +
+      '<div class="s16-region-grid">' +
+      regionTeams.map(function(t) { return makeTeamCard(t, false); }).join('') +
+      '</div></div>';
+  }).join('');
+}
+
+function renderLeverageTable(leveragePlays) {
+  var el = document.getElementById('leverageTableBody');
+  if (!el) return;
+  if (!leveragePlays || leveragePlays.length === 0) {
+    el.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:1rem">No significant leverage plays identified for current inputs.</td></tr>';
+    return;
+  }
+  el.innerHTML = leveragePlays.map(function(lp) {
+    var edge = pct(lp.blendedWinProb - lp.publicPickPct);
+    return '<tr>' +
+      '<td><strong>' + lp.team.name + '</strong> <span style="color:#aaa;font-size:0.8em">(' + lp.team.seed + '-seed)</span></td>' +
+      '<td>' + lp.round + '</td>' +
+      '<td><span class="prob-badge">' + pct(lp.blendedWinProb) + '</span></td>' +
+      '<td>' + pct(lp.publicPickPct) + '</td>' +
+      '<td>' + lp.rationale + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderUpsets(upsets) {
+  var el = document.getElementById('upsetList');
+  if (!el) return;
+  if (!upsets || upsets.length === 0) {
+    el.innerHTML = '<li style="color:#aaa">No significant upsets called under current inputs.</li>';
+    return;
+  }
+  el.innerHTML = upsets.map(function(u) {
+    var winner = u.winner, loser = u.loser;
+    var reasoning = u.forced
+      ? 'Locked in per your team constraint.'
+      : winner.name + ' (' + winner.seed + '-seed) defeats ' + loser.name + ' (' + loser.seed + '-seed). KenPom EM delta of ' + Math.abs(winner.em - loser.em).toFixed(1) + ' points is much smaller than the seed gap suggests — public will be shocked when ' + winner.name + ' advances.';
+    return '<li class="upset-item">' +
+      '<div class="upset-item-header">' +
+        '<div class="upset-matchup">(' + winner.seed + ') ' + winner.name + ' over (' + loser.seed + ') ' + loser.name + '</div>' +
+        '<span class="upset-round-badge">' + roundLabel(u.round) + '</span>' +
+      '</div>' +
+      '<div class="upset-reasoning">' + reasoning + '</div>' +
+    '</li>';
+  }).join('');
+}
+
+function renderFlags(flags) {
+  var el = document.getElementById('flagList');
+  if (!el) return;
+  if (!flags || flags.length === 0) {
+    el.innerHTML = '<div style="color:#aaa">No significant KenPom vs Vegas divergences detected.</div>';
+    return;
+  }
+  el.innerHTML = flags.map(function(f) {
+    var kPct = pct(f.kenpomProb);
+    var vPct = pct(f.vegasProb);
+    var delta = pct(f.delta);
+    var favored = f.kenpomProb > f.vegasProb ? 'KenPom favors ' + f.teamA.name : 'Vegas favors ' + f.teamA.name;
+    return '<div class="flag-item">' +
+      '<span class="flag-icon">⚠️</span>' +
+      '<div class="flag-content">' +
+        '<div class="flag-teams"><strong>' + f.teamA.name + '</strong> vs <strong>' + f.teamB.name + '</strong></div>' +
+        '<div class="flag-detail">KenPom: ' + kPct + ' | Vegas: ' + vPct + ' | <span class="flag-delta">Delta: ' + delta + '</span> — ' + favored + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderRationale(rationale) {
+  var el = document.getElementById('rationaleText');
+  if (!el) return;
+  el.innerHTML = rationale;
+}
+
+function renderConstraintWarnings(warnings) {
+  var el = document.getElementById('constraintWarnings');
+  if (!el) return;
+  if (!warnings || warnings.length === 0) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  el.innerHTML = warnings.map(function(w) {
+    return '<div class="warning-item">⚠️ ' + w + '</div>';
+  }).join('');
+}
+
+function renderResults(result) {
+  document.getElementById('championHero').innerHTML = renderChampion(result.champion);
+  renderTeamGrid(result.finalFour, 'finalFourGrid', true);
+  renderTeamGrid(result.elite8, 'eliteEightGrid', false);
+  renderSweetSixteen(result.sweet16);
+  renderLeverageTable(result.leveragePlays);
+  renderUpsets(result.upsets);
+  renderFlags(result.divergenceFlags);
+  renderRationale(result.poolRationale);
+  renderConstraintWarnings(result.constraintWarnings);
+  var resultsEl = document.getElementById('results');
+  if (resultsEl) {
+    resultsEl.classList.remove('hidden');
+    setTimeout(function() { resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+  }
+  window._lastBracketResult = result;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  var toggleBtns = document.querySelectorAll('.toggle-btn');
+  var upsetToleranceInput = document.getElementById('upsetTolerance');
+
+  toggleBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      toggleBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      upsetToleranceInput.value = btn.dataset.value;
+    });
+  });
+
+  var scoringFormat = document.getElementById('scoringFormat');
+  var otherWrapper = document.getElementById('otherScoringWrapper');
+  scoringFormat.addEventListener('change', function () {
+    otherWrapper.style.display = this.value === 'other' ? '' : 'none';
+  });
+
+  document.getElementById('printBtn').addEventListener('click', function () {
+    window.print();
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function () {
+    if (window._lastBracketResult) {
+      var text = buildClipboardText(window._lastBracketResult);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showToast);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast();
+      }
+    }
+  });
+
+  function showToast(msg) {
+    var toast = document.getElementById('toast');
+    toast.textContent = '✓ Bracket copied to clipboard!';
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 2500);
+  }
+
+  var form = document.getElementById('bracketForm');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = document.getElementById('generateBtn');
+      var original = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
+      setTimeout(function() {
+        try {
+          var formData = {
+            poolSize: document.getElementById('poolSize') ? parseInt(document.getElementById('poolSize').value) || 20 : 20,
+            scoringFormat: document.getElementById('scoringFormat') ? document.getElementById('scoringFormat').value : 'standard',
+            otherScoringDesc: document.getElementById('otherScoringDesc') ? document.getElementById('otherScoringDesc').value : '',
+            upsetTolerance: document.getElementById('upsetTolerance') ? document.getElementById('upsetTolerance').value : 'moderate',
+            protectedTeams: document.getElementById('protectedTeams') ? document.getElementById('protectedTeams').value : '',
+            eliminateTeams: document.getElementById('eliminateTeams') ? document.getElementById('eliminateTeams').value : '',
+            preferredChampion: document.getElementById('preferredChampion') ? document.getElementById('preferredChampion').value : '',
+            kenpomData: document.getElementById('kenpomData') ? document.getElementById('kenpomData').value : '',
+            publicPickData: document.getElementById('publicPickData') ? document.getElementById('publicPickData').value : ''
+          };
+          var result = generateBracket(formData);
+          renderResults(result);
+        } catch (err) {
+          var resultsEl = document.getElementById('results');
+          if (resultsEl) {
+            resultsEl.classList.remove('hidden');
+            resultsEl.innerHTML = '<div style="color:#ff6b6b;padding:2rem;text-align:center"><strong>Error generating bracket:</strong><br>' + err.message + '</div>';
+          }
+          console.error(err);
+        }
+        if (btn) { btn.textContent = original; btn.disabled = false; }
+      }, 50);
+    });
+  }
+});
+
+  </script>
+
+</body>
+</html>
